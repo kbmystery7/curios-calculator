@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-season="summer">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="Track your Dota 2 Quartero's Curios seasonal event progress, estimate games needed, and check your pace.">
-<link rel="icon" href="favicon.ico">
+<link rel="icon" id="favicon" href="seasons/summer/favicon.ico">
 <title>Curios Calculator</title>
 <style>
 /* ── Fonts ── */
@@ -19,14 +19,27 @@
   --bg-panel: rgba(26,16,32,0.75);
   --bg-card: rgba(26,16,32,0.6);
   --bg-input: #1a1020;
-  --border-subtle: rgba(255,191,229,0.06);
-  --border-light: rgba(255,191,229,0.08);
-  --border-input: rgba(229,172,206,0.2);
+  /* Season tint hues — overridden per season; borders & glows derive from them */
+  --tint-rgb: 255,191,229;
+  --tint2-rgb: 229,172,206;
+  --glow-rgb: 200,100,180;
+  --border-subtle: rgba(var(--tint-rgb),0.06);
+  --border-light: rgba(var(--tint-rgb),0.08);
+  --border-input: rgba(var(--tint2-rgb),0.2);
   --text-primary: #F6D5E9;
   --text-muted: #E5ACCE;
   --text-dim: #8a6a7a;
   --text-white: #fff;
   --text-hero: rgba(225,223,199,0.53);
+  --heading: #F2CEE4;
+  --ring-fill: #E5FFF1;
+  --title-accent: #FFE5F5;
+  --badge-top: #4A3115;
+  --badge-bottom: #B78946;
+  --coltitle-top: #ecc9df;
+  --coltitle-bottom: #89717f;
+  --season-bg: url('seasons/spring/bg.png');
+  --season-portrait: url('seasons/spring/portrait.png');
   --accent-gold: #FCD69C;
   --accent-gold-dark: #B78946;
   --color-ahead: #88ff88;
@@ -35,6 +48,30 @@
   --font-body: 'Radiance', Georgia, serif;
   --font-title: 'RadianceM', Georgia, serif;
   --octagon-clip: polygon(50% 0%, 85% 15%, 100% 50%, 85% 85%, 50% 100%, 15% 85%, 0% 50%, 15% 15%);
+}
+
+/* ── Summer palette (draft: spring hue-rotated to emerald; refine these) ── */
+html[data-season="summer"] {
+  --bg-deep:   #0B0E0D;
+  --bg-mid:    #212C27;
+  --bg-panel:  rgba(20,28,25,0.75);
+  --bg-card:   rgba(20,28,25,0.6);
+  --bg-input:  #141C19;
+  --tint-rgb:  209,237,225;
+  --tint2-rgb: 188,213,203;
+  --glow-rgb:  120,180,155;
+  --text-primary: #DEEDE7;
+  --text-muted:   #BCD5CB;
+  --text-dim:     #72827B;
+  --heading:      #D8E8E1;
+  --ring-fill:    #C7F9E5;
+  --title-accent: #E5FFF0;
+  --badge-top:    #040806;
+  --badge-bottom: #194B37;
+  --coltitle-top:    #C7F9E5;
+  --coltitle-bottom: #83AA9B;
+  --season-bg:       url('seasons/summer/bg.png');
+  --season-portrait: url('seasons/summer/portrait.png');
 }
 
 /* ── Reset & Base ── */
@@ -51,7 +88,7 @@ body {
 /* ── Background ── */
 .page-bg {
   position: fixed; inset: 0;
-  background: url('bg.png') center top / cover no-repeat;
+  background: var(--season-bg) center top / cover no-repeat;
   opacity: 0.35;
   z-index: 0;
 }
@@ -81,9 +118,10 @@ body {
 
 .logo-portrait {
   grid-area: logo;
-  width: 90px; height: auto;
+  width: 90px; height: 90px;
   align-self: center; justify-self: center;
-  filter: drop-shadow(0 4px 20px rgba(200,100,180,0.3));
+  background: var(--season-portrait) center / contain no-repeat;
+  filter: drop-shadow(0 4px 20px rgba(var(--glow-rgb),0.3));
 }
 
 .title-group {
@@ -95,7 +133,7 @@ body {
   font-weight: bold;
   font-size: 38px;
   letter-spacing: 3px;
-  background: linear-gradient(to bottom, #ffffff, #E5FFF1 25%, #FFE5F5);
+  background: linear-gradient(to bottom, #ffffff, #E5FFF1 25%, var(--title-accent));
   -webkit-background-clip: text; -webkit-text-fill-color: transparent;
   background-clip: text;
   margin-bottom: 2px;
@@ -114,11 +152,12 @@ body {
   display: flex; align-items: center; justify-content: center;
   align-self: center; justify-self: center;
 }
-.level-badge img {
-  position: absolute; width: 72px; height: 72px;
-  object-fit: contain;
-  filter: drop-shadow(0 0 12px rgba(200,100,180,0.4));
-  z-index: 1;
+.level-badge .badge-fill {
+  position: absolute; inset: 2px; z-index: 0;
+  /* Octagon sized (84px) so its vertices meet the ring path — sits under the ring outline (no gap) */
+  background: linear-gradient(to bottom, var(--badge-top), var(--badge-bottom));
+  clip-path: var(--octagon-clip);
+  filter: drop-shadow(0 0 12px rgba(var(--glow-rgb),0.4));
 }
 .level-badge .level-number {
   position: relative; z-index: 2;
@@ -127,11 +166,11 @@ body {
   color: var(--text-white);
   text-shadow: 0 2px 8px rgba(0,0,0,0.8);
 }
-.level-badge .xp-ring { position: absolute; width: 88px; height: 88px; z-index: 0; }
-.level-badge .xp-ring polygon { fill: none; stroke-width: 3; stroke-linejoin: round; }
-.level-badge .xp-ring .ring-bg { stroke: rgba(255,191,229,0.1); }
+.level-badge .xp-ring { position: absolute; width: 88px; height: 88px; z-index: 1; }
+.level-badge .xp-ring polygon { fill: none; stroke-width: 4; stroke-linejoin: round; }
+.level-badge .xp-ring .ring-bg { stroke: #000; }
 .level-badge .xp-ring .ring-fill {
-  stroke: #E5FFF1;
+  stroke: var(--ring-fill);
   filter: drop-shadow(0 0 4px rgba(229,255,241,0.4));
   transition: stroke-dashoffset 0.3s;
 }
@@ -168,7 +207,7 @@ body {
   text-align: center; outline: none;
   transition: border-color 0.2s;
 }
-.input-row input[type="number"]:focus { border-color: rgba(229,172,206,0.5); }
+.input-row input[type="number"]:focus { border-color: rgba(var(--tint2-rgb),0.5); }
 .input-row input[type="number"]::-webkit-inner-spin-button { opacity: 0.3; }
 
 .countdown { font-size: 13px; color: var(--text-muted); text-shadow: 0 1px 6px rgba(0,0,0,0.5); }
@@ -189,7 +228,7 @@ body {
 }
 .panel-header h3 {
   font-family: var(--font-title);
-  font-size: 16px; color: #F2CEE4;
+  font-size: 16px; color: var(--heading);
   letter-spacing: 1px; text-transform: uppercase; margin: 0;
 }
 
@@ -212,7 +251,7 @@ body {
 .xp-col { padding: 12px 20px 6px; }
 .xp-col-title {
   font-family: var(--font-title);
-  font-size: 13px; color: #F2CEE4;
+  font-size: 13px; color: var(--heading);
   text-transform: uppercase; letter-spacing: 1px;
   margin-bottom: 8px; text-align: center;
 }
@@ -268,7 +307,7 @@ body {
   font-family: var(--font-body); font-size: 12px;
   cursor: pointer; transition: all 0.2s;
 }
-.pace-btn:hover { border-color: rgba(229,172,206,0.4); color: var(--text-white); }
+.pace-btn:hover { border-color: rgba(var(--tint2-rgb),0.4); color: var(--text-white); }
 .pace-btn.danger:hover { border-color: rgba(255,100,100,0.4); color: var(--color-behind); }
 
 .pace-grid {
@@ -330,7 +369,7 @@ body {
   display: none; position: absolute;
   bottom: 100%; left: 50%; transform: translateX(-50%);
   margin-bottom: 8px; z-index: 10;
-  border: 1px solid rgba(255,191,229,0.15);
+  border: 1px solid rgba(var(--tint-rgb),0.15);
   border-radius: 4px; background: var(--bg-deep);
   padding: 4px; box-shadow: 0 4px 20px rgba(0,0,0,0.7);
 }
@@ -347,7 +386,7 @@ body {
   font-family: var(--font-body); font-size: 12px;
   cursor: pointer; transition: all 0.2s;
 }
-.tier-btn.active { background: rgba(255,191,229,0.15); color: var(--text-white); }
+.tier-btn.active { background: rgba(var(--tint-rgb),0.15); color: var(--text-white); }
 
 /* ── Reward Badges ── */
 .level-badges { display: flex; gap: 4px; justify-content: center; flex-wrap: wrap; }
@@ -391,7 +430,8 @@ body {
 
 /* ── Bottom Rewards ── */
 .bottom-rewards {
-  display: grid; grid-template-columns: 1fr 1fr;
+  /* Columns proportional to dot counts (Effects 10 : Antiques 12) so each fits one line at full width */
+  display: grid; grid-template-columns: 10fr 12fr;
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
   border-radius: 6px; padding: 16px;
@@ -401,7 +441,7 @@ body {
 .bottom-rewards .reward-col:last-child { padding-left: 16px; }
 .bottom-rewards .col-title {
   font-family: var(--font-title); font-size: 16px;
-  background: linear-gradient(to bottom, #ecc9df, #89717f);
+  background: linear-gradient(to bottom, var(--coltitle-top), var(--coltitle-bottom));
   -webkit-background-clip: text; -webkit-text-fill-color: transparent;
   background-clip: text;
   letter-spacing: 2px; text-transform: uppercase;
@@ -432,13 +472,10 @@ body {
 }
 
 /* ── Responsive ── */
-@media (max-width: 900px) {
-  /* Cap Effects (9 dots) and Antiques (10 dots) at 5 dots wide so wraps split evenly and each row centers */
-  #badges-effects, #badges-antiques {
-    max-width: calc(5 * 34px + 4 * 4px);
-    margin-left: auto;
-    margin-right: auto;
-  }
+/* Below the width where both rows fit one line, split evenly (Effects 2×5, Antiques 2×6) rather than wrapping unevenly */
+@media (max-width: 960px) {
+  #badges-effects  { max-width: calc(5 * 34px + 4 * 4px); margin-left: auto; margin-right: auto; }
+  #badges-antiques { max-width: calc(6 * 34px + 5 * 4px); margin-left: auto; margin-right: auto; }
 }
 
 @media (max-width: 700px) {
@@ -469,7 +506,7 @@ body {
 
   <!-- Header -->
   <div class="header">
-    <img class="logo-portrait" src="logo.png" alt="Quartero">
+    <div class="logo-portrait" role="img" aria-label="Quartero"></div>
     <div class="title-group">
       <div class="title">CURIOS CALCULATOR</div>
       <div class="subtitle">Track your Quartero's Curios progress</div>
@@ -479,13 +516,13 @@ body {
         <polygon class="ring-bg" points="44,2 74,14 86,44 74,74 44,86 14,74 2,44 14,14" />
         <polygon class="ring-fill" id="xpRing" points="44,2 74,14 86,44 74,74 44,86 14,74 2,44 14,14" />
       </svg>
-      <img src="badge.png" alt="">
-      <span class="level-number" id="levelDisplay">0</span>
+      <div class="badge-fill"></div>
+      <span class="level-number" id="levelDisplay">1</span>
     </div>
     <div class="inputs-row">
       <div class="input-row">
         <label>Current Level</label>
-        <input type="number" id="currentLevel" min="0" max="300" value="0">
+        <input type="number" id="currentLevel" min="1" max="300" value="1">
       </div>
       <div class="input-row">
         <label>Current XP</label>
@@ -493,7 +530,7 @@ body {
       </div>
       <div class="input-row">
         <label>Target Level</label>
-        <input type="number" id="targetLevel" min="0" max="300" value="30">
+        <input type="number" id="targetLevel" min="1" max="300" value="30">
       </div>
       <div class="countdown" id="countdown"></div>
     </div>
@@ -535,39 +572,7 @@ body {
   <!-- Hero Set Rewards -->
   <div class="rewards-section">
     <h3>Hero Set Rewards</h3>
-    <div class="hero-rewards">
-      <div class="hero-card">
-        <div class="card-top">
-          <div class="hero-name">Death Prophet</div>
-          <div class="set-name"><a href="https://liquipedia.net/dota2/The_Blue_Lotus" target="_blank">The Blue Lotus<span class="set-preview"><img src="set_blue_lotus.png" alt="The Blue Lotus"></span></a></div>
-        </div>
-        <div class="card-bottom">
-          <div class="level-badges" id="badges-dp"></div>
-        </div>
-      </div>
-      <div class="hero-card">
-        <div class="card-top">
-          <div class="hero-name">Mars</div>
-          <div class="set-name" id="marsSetName"><a id="marsSetLink" href="" target="_blank"><span id="marsSetText"></span><span class="set-preview"><img id="marsSetImg" src="" alt=""></span></a></div>
-        </div>
-        <div class="tier-toggle">
-          <button class="tier-btn" id="tier1Btn" onclick="setMarsTier(1)">Tier 1</button>
-          <button class="tier-btn" id="tier2Btn" onclick="setMarsTier(2)">Tier 2</button>
-        </div>
-        <div class="card-bottom">
-          <div class="level-badges" id="badges-mars"></div>
-        </div>
-      </div>
-      <div class="hero-card">
-        <div class="card-top">
-          <div class="hero-name">Zeus</div>
-          <div class="set-name"><a href="https://liquipedia.net/dota2/Stormfather" target="_blank">Stormfather<span class="set-preview"><img src="set_stormfather.png" alt="Stormfather"></span></a></div>
-        </div>
-        <div class="card-bottom">
-          <div class="level-badges" id="badges-zeus"></div>
-        </div>
-      </div>
-    </div>
+    <div class="hero-rewards" id="heroRewards"></div>
   </div>
 
   <!-- Event Effects & Antiques -->
@@ -590,26 +595,57 @@ body {
 
 <script>
 /* ── Constants ── */
-const EVENT_END = new Date('2026-06-04T20:00:00Z');
-const XP_PER_LEVEL = 1000;
-const XP_WIN = 650, XP_LOSS = 250;
-const XP_TURBO_WIN = 425, XP_TURBO_LOSS = 175;
+/* ──────────────────────────────────────────────────────────────────────────
+ * EVENT CONFIG — the only block to edit when the seasonal event cycles.
+ * Each hero set is either single-tier ({name, url, img, levels}) or two-tier
+ * ({hero, tiers:[…]}). The tier toggle, auto-switch, and badges all derive
+ * from this. `id` namespaces localStorage so returning users reset cleanly.
+ * ────────────────────────────────────────────────────────────────────────── */
+const EVENT = {
+  id: '2026-summer',
+  season: 'summer',                        // selects the CSS [data-season] palette + bg/portrait
+  endsAt: '2026-09-03T23:00:00Z',          // Fri Sep 4 2026 02:00 UTC+3
+  xp: { perLevel: 1000, win: 650, loss: 250, turboWin: 425, turboLoss: 175 },
+  heroSets: [
+    { hero: 'Broodmother', name: 'Golden Orbweaver',
+      url: 'https://liquipedia.net/dota2/Golden_Orbweaver', img: 'set_golden_orbweaver.png',
+      levels: [1, 2, 4, 6, 8] },
+    { hero: 'Venomancer', tiers: [
+      { name: 'The Venomous Vizier', url: 'https://liquipedia.net/dota2/The_Venomous_Vizier',
+        img: 'set_venomous_vizier.png', levels: [21, 24, 27, 30] },
+      { name: 'Poisonous Prelate',   url: 'https://liquipedia.net/dota2/Poisonous_Prelate',
+        img: 'set_poisonous_prelate.png', levels: [40, 55, 75, 100] },
+    ] },
+    { hero: 'Nyx Assassin', name: 'The Amber Apis',
+      url: 'https://liquipedia.net/dota2/The_Amber_Apis', img: 'set_amber_apis.png',
+      levels: [10, 12, 15, 18] },
+  ],
+  effects:  [2, 3, 5, 7, 11, 13, 17, 19, 23, 29],
+  antiques: [5, 10, 15, 20, 25, 30, 40, 60, 80, 100, 200, 300],
+};
+
+// Derived constants
+const EVENT_END = new Date(EVENT.endsAt);
+const XP_PER_LEVEL = EVENT.xp.perLevel;
+const XP_WIN = EVENT.xp.win, XP_LOSS = EVENT.xp.loss;
+const XP_TURBO_WIN = EVENT.xp.turboWin, XP_TURBO_LOSS = EVENT.xp.turboLoss;
 const XP_AVG_NORMAL = (XP_WIN + XP_LOSS) / 2;
 const XP_AVG_TURBO = (XP_TURBO_WIN + XP_TURBO_LOSS) / 2;
 
-const REWARDS = {
-  dp:        [1, 3, 6, 8, 10],
-  marsTier1: [21, 24, 27, 30],
-  marsTier2: [40, 55, 75, 100],
-  zeus:      [12, 14, 16, 18],
-  effects:   [2, 5, 7, 11, 13, 17, 19, 23, 29],
-  antiques:  [5, 15, 20, 25, 30, 40, 60, 100, 200, 300]
-};
+// Two-tier set: index + auto-switch thresholds (last level of tier 1, first of tier 2)
+const TWO_TIER_INDEX = EVENT.heroSets.findIndex(s => s.tiers);
+const TWO_TIER = TWO_TIER_INDEX >= 0 ? EVENT.heroSets[TWO_TIER_INDEX] : null;
+const T1_LAST  = TWO_TIER ? Math.max(...TWO_TIER.tiers[0].levels) : Infinity;
+const T2_FIRST = TWO_TIER ? Math.min(...TWO_TIER.tiers[1].levels) : Infinity;
 
-const MARS_DATA = {
-  1: { name: 'The Red Berserker', url: 'https://liquipedia.net/dota2/The_Red_Berserker', img: 'set_red_berserker.png' },
-  2: { name: "World's End",       url: 'https://liquipedia.net/dota2/WorldsEnd',          img: 'set_worldsend.png' }
-};
+// localStorage keys, namespaced per event so a new cycle auto-resets returning users
+const SKEY = k => `quartero_${EVENT.id}_${k}`;
+
+// Apply the season theme: palette/background/portrait come from the CSS [data-season] block;
+// the favicon is swapped here. Both are also set statically (html attr / <link>) to avoid a flash,
+// and re-asserted from config below in case they drift.
+document.documentElement.dataset.season = EVENT.season;
+document.getElementById('favicon').href = `seasons/${EVENT.season}/favicon.ico`;
 
 // Pre-computed octagon perimeter for XP ring
 const OCTAGON_PTS = [[44,2],[74,14],[86,44],[74,74],[44,86],[14,74],[2,44],[14,14]];
@@ -619,7 +655,7 @@ const OCTAGON_PERIMETER = OCTAGON_PTS.reduce((sum, [x1, y1], i) => {
 }, 0);
 
 /* ── State ── */
-let currentMarsTier = 1;
+const tierState = {};   // setIndex -> active tier index (0-based); only the two-tier set uses it
 let prevLevel = null;
 const badgeStates = {};
 
@@ -641,22 +677,56 @@ const $ = id => document.getElementById(id);
 
 function readInputs() {
   return {
-    level: parseInt($('currentLevel').value) || 0,
-    xp:    parseInt($('currentXP').value) || 0,
-    target: parseInt($('targetLevel').value) || 0,
+    level:  Math.max(1, parseInt($('currentLevel').value) || 1),
+    xp:     parseInt($('currentXP').value) || 0,
+    target: Math.max(1, parseInt($('targetLevel').value) || 1),
   };
 }
 
-/* ── Mars Tier ── */
-function setMarsTier(tier, skipUpdate) {
-  currentMarsTier = tier;
-  $('tier1Btn').classList.toggle('active', tier === 1);
-  $('tier2Btn').classList.toggle('active', tier === 2);
-  const d = MARS_DATA[tier];
-  $('marsSetLink').href = d.url;
-  $('marsSetText').textContent = d.name;
-  $('marsSetImg').src = d.img;
-  $('marsSetImg').alt = d.name;
+/* ── Hero Set Cards (built from EVENT.heroSets) ── */
+function applySetMeta(card, meta) {
+  const link = card.querySelector('.set-name a');
+  link.href = meta.url;
+  card.querySelector('.set-text').textContent = meta.name;
+  const img = card.querySelector('.set-preview img');
+  img.src = meta.img;
+  img.alt = meta.name;
+}
+
+function renderHeroCards() {
+  const container = $('heroRewards');
+  container.innerHTML = '';
+
+  EVENT.heroSets.forEach((set, i) => {
+    const card = document.createElement('div');
+    card.className = 'hero-card';
+    card.id = `heroCard${i}`;
+    card.innerHTML = `
+      <div class="card-top">
+        <div class="hero-name">${set.hero}</div>
+        <div class="set-name"><a href="" target="_blank"><span class="set-text"></span><span class="set-preview"><img src="" alt=""></span></a></div>
+      </div>
+      ${set.tiers ? `<div class="tier-toggle">${set.tiers.map((t, ti) =>
+          `<button class="tier-btn" data-tier="${ti}">Tier ${ti + 1}</button>`).join('')}</div>` : ''}
+      <div class="card-bottom"><div class="level-badges" id="badges-set${i}"></div></div>`;
+    container.appendChild(card);
+
+    if (set.tiers) {
+      card.querySelectorAll('.tier-btn').forEach(btn =>
+        btn.addEventListener('click', () => setTier(i, +btn.dataset.tier)));
+      setTier(i, tierState[i] ?? 0, true);   // seed active tier button + set meta
+    } else {
+      applySetMeta(card, set);
+    }
+  });
+}
+
+// Switch the active tier on a two-tier set (updates buttons, link/name/preview, badges)
+function setTier(setIndex, tierIndex, skipUpdate) {
+  tierState[setIndex] = tierIndex;
+  const card = $(`heroCard${setIndex}`);
+  card.querySelectorAll('.tier-btn').forEach((b, i) => b.classList.toggle('active', i === tierIndex));
+  applySetMeta(card, EVENT.heroSets[setIndex].tiers[tierIndex]);
   if (!skipUpdate) updateDisplay();
 }
 
@@ -720,12 +790,15 @@ function updateDisplay() {
 
   $('levelDisplay').textContent = cur;
 
-  // Auto-switch Mars tier: first call seeds from current state; later calls react to level crossing 30
-  if (prevLevel === null) {
-    setMarsTier((cur >= 30 && tgt >= 40) ? 2 : 1, true);
-  } else if (prevLevel !== cur) {
-    if (prevLevel < 30 && cur >= 30 && tgt >= 40) setMarsTier(2, true);
-    else if (prevLevel >= 30 && cur < 30) setMarsTier(1, true);
+  // Auto-switch the two-tier set: first call seeds from current state; later calls react
+  // to the level crossing tier 1's last reward (T1_LAST) while targeting tier 2 (T2_FIRST).
+  if (TWO_TIER) {
+    if (prevLevel === null) {
+      setTier(TWO_TIER_INDEX, (cur >= T1_LAST && tgt >= T2_FIRST) ? 1 : 0, true);
+    } else if (prevLevel !== cur) {
+      if (prevLevel < T1_LAST && cur >= T1_LAST && tgt >= T2_FIRST) setTier(TWO_TIER_INDEX, 1, true);
+      else if (prevLevel >= T1_LAST && cur < T1_LAST) setTier(TWO_TIER_INDEX, 0, true);
+    }
   }
   prevLevel = cur;
 
@@ -735,16 +808,17 @@ function updateDisplay() {
   ring.style.strokeDashoffset = OCTAGON_PERIMETER * (1 - Math.min(curXP / XP_PER_LEVEL, 1));
 
   // Persist
-  localStorage.setItem('quartero_current_level', cur);
-  localStorage.setItem('quartero_current_xp', curXP);
-  localStorage.setItem('quartero_target_level', tgt);
+  localStorage.setItem(SKEY('current_level'), cur);
+  localStorage.setItem(SKEY('current_xp'), curXP);
+  localStorage.setItem(SKEY('target_level'), tgt);
 
   // Badges (level/target dependent only — skip on the time-only refresh)
-  buildBadges('badges-dp', REWARDS.dp, cur, tgt);
-  buildBadges('badges-mars', currentMarsTier === 1 ? REWARDS.marsTier1 : REWARDS.marsTier2, cur, tgt);
-  buildBadges('badges-zeus', REWARDS.zeus, cur, tgt);
-  buildBadges('badges-effects', REWARDS.effects, cur, tgt);
-  buildBadges('badges-antiques', REWARDS.antiques, cur, tgt);
+  EVENT.heroSets.forEach((set, i) => {
+    const levels = set.tiers ? set.tiers[tierState[i] ?? 0].levels : set.levels;
+    buildBadges(`badges-set${i}`, levels, cur, tgt);
+  });
+  buildBadges('badges-effects', EVENT.effects, cur, tgt);
+  buildBadges('badges-antiques', EVENT.antiques, cur, tgt);
 
   refreshTimeDependent();
 }
@@ -799,18 +873,18 @@ function refreshTimeDependent() {
 /* ── Pace Check ── */
 function saveSnapshot() {
   const { level, xp, target } = readInputs();
-  localStorage.setItem('quartero_snapshot', JSON.stringify({ level, xp, target, timestamp: Date.now() }));
+  localStorage.setItem(SKEY('snapshot'), JSON.stringify({ level, xp, target, timestamp: Date.now() }));
   updatePaceCheck(level, xp);
 }
 
 function clearSnapshot() {
-  localStorage.removeItem('quartero_snapshot');
+  localStorage.removeItem(SKEY('snapshot'));
   updatePaceCheck();
 }
 
 function updatePaceCheck(cur, curXP) {
   const el = $('paceContent');
-  const raw = localStorage.getItem('quartero_snapshot');
+  const raw = localStorage.getItem(SKEY('snapshot'));
   if (!raw) {
     el.innerHTML = '<div class="pace-empty">Mark your progress to track your pace over time.</div>';
     return;
@@ -859,14 +933,14 @@ function updatePaceCheck(cur, curXP) {
 function handleXPInput() {
   const lvlInput = $('currentLevel');
   const xpInput = $('currentXP');
-  let xp = parseInt(xpInput.value), lvl = parseInt(lvlInput.value) || 0;
+  let xp = parseInt(xpInput.value), lvl = parseInt(lvlInput.value) || 1;
 
   if (xp >= XP_PER_LEVEL) {
     lvl += Math.floor(xp / XP_PER_LEVEL);
     xp %= XP_PER_LEVEL;
     lvlInput.value = Math.min(lvl, 300);
     xpInput.value = xp;
-  } else if (xp < 0 && lvl > 0) {
+  } else if (xp < 0 && lvl > 1) {
     lvl--; xp = XP_PER_LEVEL + xp;
     lvlInput.value = lvl;
     xpInput.value = Math.max(0, xp);
@@ -877,9 +951,14 @@ function handleXPInput() {
 }
 
 /* ── Init ── */
-$('currentLevel').value = localStorage.getItem('quartero_current_level') || 0;
-$('currentXP').value = localStorage.getItem('quartero_current_xp') || 0;
-$('targetLevel').value = localStorage.getItem('quartero_target_level') || 30;
+// Drop localStorage from prior cycles (and the legacy un-namespaced keys) so returning users reset cleanly
+Object.keys(localStorage)
+  .filter(k => k.startsWith('quartero_') && !k.startsWith(`quartero_${EVENT.id}_`))
+  .forEach(k => localStorage.removeItem(k));
+
+$('currentLevel').value = localStorage.getItem(SKEY('current_level')) || 1;
+$('currentXP').value = localStorage.getItem(SKEY('current_xp')) || 0;
+$('targetLevel').value = localStorage.getItem(SKEY('target_level')) || 30;
 
 /* ── XP Gain Buttons ── */
 function applyXpDelta(delta) {
@@ -912,6 +991,7 @@ $('eventEndLocal').textContent = EVENT_END.toLocaleString(undefined, {
   hour: '2-digit', minute: '2-digit', timeZoneName: 'short'
 });
 
+renderHeroCards();
 updateDisplay();
 updateCountdown();
 setInterval(() => { updateCountdown(); refreshTimeDependent(); }, 60000);
